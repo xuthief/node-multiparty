@@ -55,6 +55,7 @@ function Form(options) {
   self.uploadDir = options.uploadDir || os.tmpDir();
   self.encoding = options.encoding || 'utf8';
   self.hash = options.hash || false;
+  self.binary = options.binary || false;
 
   self.bytesReceived = 0;
   self.bytesExpected = null;
@@ -616,7 +617,7 @@ function handleFile(self, fileStream) {
 }
 
 function handleField(self, fieldStream) {
-  var value = '';
+  var value = self.binary ? new Buffer(0):'';
   var decoder = new StringDecoder(self.encoding);
 
   beginFlush(self);
@@ -629,7 +630,12 @@ function handleField(self, fieldStream) {
       self.handleError(new Error("maxFieldsSize " + self.maxFieldsSize + " exceeded"));
       return;
     }
-    value += decoder.write(buffer);
+
+    if (self.binary) {
+        value = Buffer.concat([value,buffer]);
+    } else {
+        value += decoder.write(buffer);
+    }
   });
 
   fieldStream.on('end', function() {
